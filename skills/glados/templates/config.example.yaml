@@ -1,0 +1,20 @@
+enable: true
+agents:
+  codex:
+    enable: true
+  claude-code:
+    enable: false
+  hermes:
+    enable: false
+name: GLaDOS
+tts:
+  enable: false
+  max_length: 100
+  hooks:
+    example:
+      completion: false
+projects:
+  - name: example
+    path: ~/Projects/example
+    enable: true
+    private: false

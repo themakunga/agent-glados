@@ -1,0 +1,31 @@
+version: "0.2"
+language: en,es
+import:
+  - "@cspell/dict-es-es/cspell-ext.json"
+dictionaries:
+  - en_US
+  - softwareTerms
+  - python
+  - bash
+  - filetypes
+words:
+  - claude
+  - cutover
+  - timespec
+  - hermes
+  - amgmt
+  - glados
+  - jsonschema
+  - nixpkgs
+  - pyyaml
+  - tomllib
+  - zeroclaw
+  - yamllint
+  - commitlint
+  - kanagawa
+  - motherbase
+  - steamdeck
+  - nousresearch
+ignorePaths:
+  - .git
+  - "**/__pycache__/**"

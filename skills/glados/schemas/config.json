@@ -1,0 +1,107 @@
+{
+  "type": "object",
+  "properties": {
+    "enable": {
+      "type": "boolean"
+    },
+    "agents": {
+      "type": "object",
+      "properties": {
+        "codex": {
+          "type": "object",
+          "properties": {
+            "enable": {
+              "type": "boolean"
+            }
+          },
+          "required": ["enable"],
+          "additionalProperties": false
+        },
+        "claude-code": {
+          "type": "object",
+          "properties": {
+            "enable": {
+              "type": "boolean"
+            }
+          },
+          "required": ["enable"],
+          "additionalProperties": false
+        },
+        "hermes": {
+          "type": "object",
+          "properties": {
+            "enable": {
+              "type": "boolean"
+            }
+          },
+          "required": ["enable"],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "personality": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tts": {
+      "type": "object",
+      "properties": {
+        "enable": {
+          "type": "boolean"
+        },
+        "max_length": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 150
+        },
+        "hooks": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "completion": {
+                "type": "boolean"
+              }
+            },
+            "required": ["completion"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["enable", "max_length", "hooks"],
+      "additionalProperties": false
+    },
+    "projects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "enable": {
+            "type": "boolean"
+          },
+          "private": {
+            "type": "boolean"
+          }
+        },
+        "required": ["name", "path", "enable", "private"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["enable", "agents", "name", "tts", "projects"],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

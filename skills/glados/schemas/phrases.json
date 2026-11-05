@@ -1,0 +1,66 @@
+{
+  "type": "object",
+  "properties": {
+    "phrases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "phrase": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 150,
+            "pattern": "^[^\\r\\n\\x00-\\x1f]+$"
+          },
+          "enable": {
+            "type": "boolean"
+          },
+          "project": {
+            "type": "string",
+            "minLength": 1
+          },
+          "event": {
+            "const": "completion"
+          },
+          "topic": {
+            "type": "string",
+            "minLength": 1
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "phrase",
+          "enable",
+          "project",
+          "event",
+          "topic",
+          "created_at",
+          "updated_at"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "renewed": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "format": "date"
+      }
+    }
+  },
+  "required": ["phrases", "renewed"],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

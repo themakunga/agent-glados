@@ -1,0 +1,57 @@
+default_install_hook_types: [pre-commit, commit-msg]
+default_stages: [pre-commit]
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-yaml
+      - id: check-json
+      - id: check-toml
+      - id: detect-private-key
+      - id: check-merge-conflict
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.37.1
+    hooks:
+      - id: yamllint
+  - repo: https://github.com/rbubley/mirrors-prettier
+    rev: v3.9.6
+    hooks:
+      - id: prettier
+        types_or: [json, markdown, yaml]
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.23.3
+    hooks:
+      - id: markdownlint-cli2
+  - repo: local
+    hooks:
+      - id: python-tests
+        name: GLaDOS regression tests
+        entry: python3 -m unittest discover -s tests
+        language: system
+        pass_filenames: false
+        types: [python]
+      - id: ruff
+        name: Python lint
+        entry: ruff check
+        language: system
+        types: [python]
+      - id: ruff-format
+        name: Python format
+        entry: ruff format --check
+        language: system
+        types: [python]
+      - id: cspell
+        name: English and Spanish spelling
+        entry: cspell lint --config .cspell.config.yaml --no-progress
+        language: node
+        additional_dependencies: [cspell@8.19.4, "@cspell/dict-es-es@2.4.0"]
+        types: [text]
+  - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
+    rev: v9.27.0
+    hooks:
+      - id: commitlint
+        additional_dependencies: ["@commitlint/config-conventional@21.2.2"]
+        entry: bash -c 'export NODE_PATH="$(npm root -g)"; exec commitlint --edit "$@"' --
+        stages: [commit-msg]
