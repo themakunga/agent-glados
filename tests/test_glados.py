@@ -120,9 +120,12 @@ class CatalogTests(unittest.TestCase):
         g.validate("config", self.config)
         catalog = g.read(g.SKILL / "templates/phrases.example.yaml")
         g.validate("phrases", catalog)
-        catalog["phrases"][0]["created_at"] = "yesterday"
-        with self.assertRaises(g.ValidationError):
-            g.validate("phrases", catalog)
+        for invalid in ("yesterday", "2026-11-04T12:00:00", "20261104T120000+0000"):
+            catalog["phrases"][0]["created_at"] = invalid
+            with self.assertRaises(g.ValidationError):
+                g.validate("phrases", catalog)
+        with self.assertRaises(TypeError):
+            g.hook(self.vault, self.config, "codex", [])
 
     def test_renew_once_and_rollover(self):
         self.assertTrue(renew_once(self.vault))

@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 import random
+import re
 import shutil
 import subprocess
 import sys
@@ -53,7 +54,10 @@ def validate(kind, value):
     def timestamp(text):
         return (
             isinstance(text, str)
-            and "T" in text
+            and re.fullmatch(
+                r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})", text
+            )
+            is not None
             and datetime.fromisoformat(text).tzinfo is not None
         )
 
@@ -329,6 +333,7 @@ if __name__ == "__main__":
     except (
         OSError,
         ValueError,
+        TypeError,
         ValidationError,
         yaml.YAMLError,
         subprocess.SubprocessError,
