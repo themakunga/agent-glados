@@ -12,6 +12,10 @@
           "properties": {
             "enable": {
               "type": "boolean"
+            },
+            "tts_enable": {
+              "type": "boolean",
+              "default": false
             }
           },
           "required": ["enable"],
@@ -22,6 +26,10 @@
           "properties": {
             "enable": {
               "type": "boolean"
+            },
+            "tts_enable": {
+              "type": "boolean",
+              "default": false
             }
           },
           "required": ["enable"],
@@ -32,6 +40,52 @@
           "properties": {
             "enable": {
               "type": "boolean"
+            },
+            "tts_enable": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          "required": ["enable"],
+          "additionalProperties": false
+        },
+        "gemini": {
+          "type": "object",
+          "properties": {
+            "enable": {
+              "type": "boolean"
+            },
+            "tts_enable": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          "required": ["enable"],
+          "additionalProperties": false
+        },
+        "openclaw": {
+          "type": "object",
+          "properties": {
+            "enable": {
+              "type": "boolean"
+            },
+            "tts_enable": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          "required": ["enable"],
+          "additionalProperties": false
+        },
+        "zeroclaw": {
+          "type": "object",
+          "properties": {
+            "enable": {
+              "type": "boolean"
+            },
+            "tts_enable": {
+              "type": "boolean",
+              "default": false
             }
           },
           "required": ["enable"],

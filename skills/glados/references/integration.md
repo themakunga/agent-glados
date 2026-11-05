@@ -2,16 +2,15 @@
 
 ## Prerequisites and installation
 
-Use Python 3.11+, PyYAML and jsonschema from the host's declared environment. `pyproject.toml`
-records dependencies, not permission to install them imperatively. Missing dependencies must follow
-WF-09 through nix-systems, with no switch. Only TTS-enabled installation requires `glados-say` on
-PATH.
+Use Python 3.11+, PyYAML and jsonschema from the host's declared environment. These runtime
+requirements do not authorize imperative installation. Missing dependencies must follow WF-09
+through nix-systems, with no switch. Only TTS-enabled installation requires `glados-say` on PATH.
 
 From the skill directory, run `python scripts/install.py`. Always confirm the amgmt path,
-global/agent enablement, name, personality path, TTS, maximum length, and every project's name,
-path, privacy, enablement and completion permission. The installer uses a serialized YAML document
-as the HBS template's raw `configuration` value. This avoids hand-built YAML quoting or a template
-engine dependency. Schema defaults do not modify input.
+global/agent enablement, per-agent voice permission, name, personality path, TTS, maximum length,
+and every project's name, path, privacy, enablement and completion permission. The installer uses a
+serialized YAML document as the HBS template's raw `configuration` value. This avoids hand-built
+YAML quoting or a template engine dependency. Schema defaults do not modify input.
 
 All values and discovery symlinks are previewed before confirmation. Enabled agents receive links to
 this source under their native skills directories; conflicting existing skills are never replaced.
@@ -42,10 +41,12 @@ python scripts/integrate.py --agent codex
 python scripts/integrate.py --agent codex --remove
 ```
 
-The registration preview requires explicit confirmation that lifecycle support was verified and
-legacy speakers were disabled. Unrelated hooks survive repeated registration and removal. Ownership
-manifests and backups remain local. Re-run registration if the interpreter or skill location
-changes. Codex hook trust must be reviewed through its native UI; never manufacture trust records.
+The registration preview confirms only the settings write; native runtime trust and session restart
+remain required. `--apply --migrate-legacy` supports an already-authorized migration and removes
+only the exact known legacy command. Unknown legacy commands abort registration. Unrelated hooks
+survive repeated registration and removal. Ownership manifests and backups remain local. Re-run
+registration if the interpreter or skill location changes. Codex hook trust must be reviewed through
+its native UI; never manufacture trust records.
 
 References: [Claude Code hooks](https://code.claude.com/docs/en/hooks),
 [Hermes hooks](https://hermes-agent.nousresearch.com/docs/user-guide/features/hooks),
@@ -96,3 +97,22 @@ Run `python -m unittest discover -s tests -v` from the repository root in the de
 environment. Stub audio in automation. Claim automatic support only after observing first-request
 renewal, same-day suppression and authorized completion playback on that exact runtime. Perform
 audible testing only with voice authorization and matching journal scope.
+
+## Confirmed catalog migration
+
+The runtime's GLaDOS configuration is the sole authority. Journal settings no longer control renewal
+or playback. Agent renewal and voice permissions are separate; an enabled agent remains silent
+unless its `tts_enable` is true.
+
+After the user confirms installation parameters, preview then apply a migration:
+
+```sh
+python scripts/migrate.py --vault ~/.vaults/amgmt --journal ~/.vaults/journal --config /tmp/reviewed.yaml
+python scripts/migrate.py --vault ~/.vaults/amgmt --journal ~/.vaults/journal --config /tmp/reviewed.yaml --apply
+```
+
+The converter keeps eligible completion phrases under the most specific configured root, preserves
+the legacy catalog and stores a local backup. Repeating migration with the same configuration
+preserves the new catalog. Disallowed or unscoped records remain only in the preserved legacy
+catalog. Renewal still runs once for the new daily scope. Credentials and confidential source
+details remain excluded even when broad roots such as `~/Projects` and `~/.vaults` are enabled.

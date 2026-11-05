@@ -13,7 +13,6 @@ import subprocess
 import sys
 import tempfile
 import time
-import tomllib
 from contextlib import contextmanager
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -22,7 +21,7 @@ import yaml
 from jsonschema import Draft202012Validator, FormatChecker, ValidationError
 
 SKILL = Path(__file__).resolve().parents[1]
-AGENTS = ("codex", "claude-code", "hermes")
+AGENTS = ("codex", "claude-code", "hermes", "gemini", "openclaw", "zeroclaw")
 
 
 class UniqueLoader(yaml.SafeLoader):
@@ -73,7 +72,11 @@ def config_at(vault):
     vault = Path(vault).expanduser().resolve(strict=True)
     if not vault.is_relative_to((Path.home() / ".vaults").resolve()):
         raise ValueError("The amgmt directory must be beneath ~/.vaults")
-    config = validate("config", read(vault / ".glados.config.yaml"))
+    return vault, validate_config(read(vault / ".glados.config.yaml"))
+
+
+def validate_config(config):
+    validate("config", config)
     if any(not Path(p["path"]).expanduser().is_absolute() for p in config["projects"]):
         raise ValueError("Project paths must be absolute or home-relative")
     names = [p["name"] for p in config["projects"]]
@@ -81,7 +84,7 @@ def config_at(vault):
         raise ValueError("Project names must be unique")
     if set(config["tts"]["hooks"]) - set(names):
         raise ValueError("Unknown project in event settings")
-    return vault, config
+    return config
 
 
 def catalog_at(vault, config):
@@ -115,7 +118,7 @@ def atomic(path, content):
 
 
 def state_dir(vault):
-    key = hashlib.sha256(str(vault).encode()).hexdigest()[:16]
+    key = hashlib.sha256(str(Path(vault).expanduser().resolve()).encode()).hexdigest()[:16]
     return Path.home() / ".local/state/glados" / key
 
 
@@ -207,23 +210,13 @@ def renew(vault, agent, name, proposals):
         return True
 
 
-def journal_allows(cwd):
-    pointer = Path.home() / ".obsidian-journal-vault"
-    if not pointer.is_file():
-        return False
-    journal = Path(pointer.read_text().strip()).expanduser().resolve(strict=True)
-    if not journal.is_relative_to((Path.home() / ".vaults").resolve()):
-        return False
-    settings = tomllib.loads((journal / ".journal.config.toml").read_text())
-    return settings.get("glados", {}).get("enable") is True and any(
-        entry.get("enable") is True
-        and cwd.is_relative_to(Path(entry["path"]).expanduser().resolve())
-        for entry in settings.get("authorized_dirs", [])
-    )
-
-
 def speak(vault, config, agent, cwd, session):
-    if not session or not cwd or not config["tts"]["enable"]:
+    if (
+        not session
+        or not cwd
+        or not config["tts"]["enable"]
+        or not config["agents"].get(agent, {}).get("tts_enable", False)
+    ):
         return False
     cwd = Path(cwd).resolve(strict=True)
     containing = [
@@ -232,7 +225,7 @@ def speak(vault, config, agent, cwd, session):
     if any(not p["enable"] or p["private"] for p in containing):
         return False
     matches = [(p, root) for p, root in projects(config, agent) if cwd.is_relative_to(root)]
-    if not matches or not journal_allows(cwd):
+    if not matches:
         return False
     project, _ = max(matches, key=lambda pair: len(pair[1].parts))
     if not config["tts"]["hooks"].get(project["name"], {}).get("completion", False):

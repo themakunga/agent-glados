@@ -2,6 +2,7 @@ enable: true
 agents:
   codex:
     enable: true
+    tts_enable: false
   claude-code:
     enable: false
   hermes:

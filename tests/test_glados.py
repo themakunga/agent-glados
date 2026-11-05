@@ -15,6 +15,7 @@ sys.path.insert(0, str(ROOT / "skills/glados/scripts"))
 import glados as g
 import install
 import integrate
+import migrate
 
 
 def renew_once(vault):
@@ -41,6 +42,7 @@ class CatalogTests(unittest.TestCase):
         self.project.mkdir()
         self.config = g.read(g.SKILL / "templates/config.example.yaml")
         self.config["projects"][0]["path"] = str(self.project)
+        self.config["agents"]["codex"]["tts_enable"] = True
         self.save()
 
     def tearDown(self):
@@ -109,12 +111,47 @@ class CatalogTests(unittest.TestCase):
             )
             speak.assert_not_called()
         with (
-            patch.object(g, "journal_allows", return_value=False),
             patch.object(g.subprocess, "run") as run,
         ):
             self.config["tts"]["enable"] = True
+            self.config["agents"]["codex"]["tts_enable"] = False
             g.speak(self.vault, self.config, "codex", str(self.project), "test")
             run.assert_not_called()
+
+    def test_migration_filters_and_preserves_legacy(self):
+        legacy = self.home / ".vaults/journal"
+        legacy.mkdir()
+        example = g.read(g.SKILL / "templates/phrases.example.yaml")["phrases"][0]
+        example["project"] = {"path": str(self.project), "is_project": True}
+        example["event"] = "success"
+        records = [
+            example,
+            dict(example, id="unscoped", project={}),
+            dict(example, id="error", event="failure"),
+        ]
+        source = legacy / ".glados/phrases.yaml"
+        g.atomic(source, g.yaml.safe_dump(records))
+        before = source.read_bytes()
+        (self.vault / ".glados.config.yaml").unlink()
+        result = migrate.migrate(self.vault, legacy, self.config, apply=True)
+        self.assertEqual(len(result["phrases"]), 1)
+        self.assertEqual(source.read_bytes(), before)
+        self.assertEqual(migrate.migrate(self.vault, legacy, self.config, apply=True), result)
+        private = g.yaml.safe_load(g.yaml.safe_dump(self.config))
+        private["projects"][0]["private"] = True
+        self.assertEqual(migrate.convert(records, private)["phrases"], [])
+
+    def test_agent_voice_authorization_is_independent(self):
+        renew_once(self.vault)
+        self.config["agents"]["hermes"]["enable"] = True
+        self.config["tts"]["enable"] = True
+        self.config["tts"]["hooks"]["example"]["completion"] = True
+        with patch.object(g.subprocess, "run") as run:
+            self.assertFalse(
+                g.speak(self.vault, self.config, "hermes", str(self.project), "session")
+            )
+            run.assert_not_called()
+        self.assertEqual(g.due(self.vault, self.config, "hermes"), [])
 
     def test_examples_and_formats(self):
         g.validate("config", self.config)
@@ -181,7 +218,6 @@ class CatalogTests(unittest.TestCase):
         self.config["tts"]["enable"] = True
         self.config["tts"]["hooks"]["example"]["completion"] = True
         with (
-            patch.object(g, "journal_allows", return_value=True),
             patch.object(g.shutil, "which", return_value="glados-say"),
             patch.object(g.subprocess, "run") as run,
         ):
@@ -209,6 +245,20 @@ class CatalogTests(unittest.TestCase):
         path.write_text("enable: true\nenable: false\n")
         with self.assertRaises(ValueError):
             g.read(path)
+
+    def test_legacy_migration_preserves_mixed_groups(self):
+        path = self.home / ".codex/hooks.json"
+        legacy = {"type": "command", "command": '"$HOME/.local/bin/glados-hook"'}
+        unrelated = {"type": "command", "command": "unrelated"}
+        g.atomic(path, json.dumps({"hooks": {"Stop": [{"hooks": [legacy, unrelated]}]}}))
+        with patch("sys.stdout", new_callable=io.StringIO):
+            integrate.integrate(self.vault, "codex", confirmed=True, migrate_legacy=True)
+        handlers = [
+            h for group in json.loads(path.read_text())["hooks"]["Stop"] for h in group["hooks"]
+        ]
+        self.assertIn(unrelated, handlers)
+        self.assertNotIn(legacy, handlers)
+        self.assertTrue((g.state_dir(self.vault) / "settings-codex.before-glados-skill").is_file())
 
     def test_integration_reinstall_remove(self):
         path = self.home / ".codex/hooks.json"

@@ -35,15 +35,20 @@ def install():
     config = {"enable": boolean("Enable GLaDOS", previous.get("enable", False)), "agents": {}}
     for agent in AGENTS:
         config["agents"][agent] = {
+            "tts_enable": boolean(
+                "Authorize completion voice for " + agent,
+                previous.get("agents", {}).get(agent, {}).get("tts_enable", False),
+            ),
             "enable": boolean(
                 "Enable " + agent + " renewal",
                 previous.get("agents", {}).get(agent, {}).get("enable", False),
-            )
+            ),
         }
     config["name"] = ask("Name", previous.get("name", "GLaDOS"))
     personality = ask("Personality document (none to omit)", previous.get("personality", "none"))
     if personality != "none":
-        if not Path(personality).expanduser().is_file():
+        document = Path(personality).expanduser()
+        if not (document if document.is_absolute() else vault / document).is_file():
             raise ValueError("Personality document is unavailable")
         config["personality"] = personality
     tts = previous.get("tts", {})
@@ -94,6 +99,9 @@ def install():
         "codex": ".agents/skills/glados",
         "claude-code": ".claude/skills/glados",
         "hermes": ".hermes/skills/glados",
+        "gemini": ".gemini/skills/glados",
+        "openclaw": ".openclaw/skills/glados",
+        "zeroclaw": ".zeroclaw/skills/glados",
     }
     links = [
         Path.home() / destinations[agent] for agent in AGENTS if config["agents"][agent]["enable"]

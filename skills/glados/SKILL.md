@@ -26,8 +26,9 @@ At each request, run from this skill directory:
 python scripts/glados.py --agent codex due
 ```
 
-Use `claude-code` or `hermes` for that runtime. Supply `--vault PATH` before the subcommand when
-amgmt is elsewhere beneath the runtime user's `~/.vaults/`.
+Use the executing runtime name: `claude-code`, `hermes`, `gemini`, `openclaw` or `zeroclaw`. Only
+the first three runtimes have automatic hook adapters. Supply `--vault PATH` before the subcommand
+when amgmt is elsewhere beneath the runtime user's `~/.vaults/`.
 
 For each due project, read `.glados.config.yaml` and inspect only that enabled, accessible,
 non-private root. Follow repository instructions and resolve symlinks before reading. Exclude
@@ -56,11 +57,11 @@ Only the registered completion adapter invokes playback. For an explicitly autho
 python scripts/glados.py --agent codex speak --cwd /enabled/project --session SESSION_ID
 ```
 
-Global, agent, project, TTS and completion settings must all allow playback. The current directory
-must also belong to an enabled authorized directory in the configured journal. Private or disabled
-nested projects remain silent. Missing session identity or matching phrases remains silent. Runtime
-state is local; playback is limited to once per 90 seconds per agent session, including parallel
-requests. Other events and other agents remain silent.
+Global, agent, per-agent `tts_enable`, project, TTS and completion settings must all allow playback.
+The current directory must belong to an enabled root in the GLaDOS configuration. Private or
+disabled nested projects remain silent. Missing session identity or matching phrases remains silent.
+Runtime state is local; playback is limited to once per 90 seconds per agent session, including
+parallel requests. Other events and other agents remain silent.
 
 Report validation, renewal or playback errors in text. Do not claim execution merely because hooks
 or skills are installed. Written responses follow the user's language; catalog phrases remain

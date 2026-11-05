@@ -3,20 +3,17 @@
 
 import argparse
 import json
-import shlex
-import sys
 from pathlib import Path
 
 import yaml
-from glados import AGENTS, SKILL, atomic, config_at, lock, state_dir
+from glados import atomic, config_at, lock, state_dir
 
 
-def integrate(vault, agent, remove=False):
+def integrate(vault, agent, remove=False, confirmed=False, migrate_legacy=False):
+    if agent not in ("codex", "claude-code", "hermes"):
+        raise ValueError("No verified automatic lifecycle adapter for this agent")
     vault, config = config_at(vault)
-    script = SKILL / "scripts/glados.py"
-    command = shlex.join(
-        [sys.executable, str(script), "--vault", str(vault), "--agent", agent, "hook"]
-    )
+    command = f'"$HOME/.local/bin/glados-agent" --agent {agent} hook'
     if agent == "hermes":
         path = Path.home() / ".hermes/config.yaml"
         events = ("pre_llm_call", "post_llm_call")
@@ -47,8 +44,21 @@ def integrate(vault, agent, remove=False):
                 groups = data.get("hooks", {}).get(event, [])
                 if entry in groups:
                     groups.remove(entry)
+        legacy = '"$HOME/.local/bin/glados-hook"'
+        legacy_count = 0
+        if migrate_legacy:
+            for groups in data.get("hooks", {}).values():
+                for group in list(groups):
+                    handlers = group.get("hooks", [])
+                    kept = [handler for handler in handlers if handler.get("command") != legacy]
+                    legacy_count += len(handlers) - len(kept)
+                    if kept != handlers:
+                        if kept:
+                            group["hooks"] = kept
+                        else:
+                            groups.remove(group)
         if not remove and "glados-hook" in json.dumps(data.get("hooks", {})):
-            raise ValueError("Legacy GLaDOS hook still exists; migrate it before registration")
+            raise ValueError("Unrecognized legacy GLaDOS hook; review before registration")
         added = {}
         if not remove:
             if not config["agents"].get(agent, {}).get("enable"):
@@ -78,16 +88,26 @@ def integrate(vault, agent, remove=False):
             else json.dumps(data, indent=2) + "\n"
         )
         if not remove:
-            print(json.dumps({"path": str(path), "owned_hooks": added}, indent=2))
+            print(
+                json.dumps(
+                    {
+                        "path": str(path),
+                        "owned_hooks": added,
+                        "retired_legacy_handlers": legacy_count,
+                    },
+                    indent=2,
+                )
+            )
             if (
-                input(
-                    "Runtime lifecycle verified and legacy speakers disabled; register these hooks? (yes/no): "
+                not confirmed
+                and input(
+                    "Register these hooks (native trust and session restart remain required)? (yes/no): "
                 )
                 != "yes"
             ):
                 return
         if path.exists():
-            backup = path.with_name(path.name + ".before-glados-skill")
+            backup = state_dir(vault) / f"settings-{agent}.before-glados-skill"
             if not backup.exists():
                 atomic(backup, path.read_text())
         # Write ownership first so an interrupted settings write is recoverable.
@@ -101,7 +121,13 @@ def integrate(vault, agent, remove=False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--vault", default=str(Path.home() / ".vaults/amgmt"))
-    parser.add_argument("--agent", choices=AGENTS, required=True)
+    parser.add_argument("--agent", choices=("codex", "claude-code", "hermes"), required=True)
     parser.add_argument("--remove", action="store_true")
+    parser.add_argument(
+        "--apply", action="store_true", help="Register the reviewed hooks without another prompt"
+    )
+    parser.add_argument(
+        "--migrate-legacy", action="store_true", help="Retire only the exact known legacy command"
+    )
     args = parser.parse_args()
-    integrate(args.vault, args.agent, args.remove)
+    integrate(args.vault, args.agent, args.remove, args.apply, args.migrate_legacy)
