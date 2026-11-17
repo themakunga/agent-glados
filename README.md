@@ -21,7 +21,7 @@ autorizada. La personalidad se mantiene en un documento configurable.
   guarda el catálogo. No incluye un servicio de generación, una API de modelos ni un programador de
   tareas.
 - Las frases diarias caducan a los siete días durante la renovación del proyecto.
-- La reproducción se limita a los directorios permitidos y a una vez cada 90 segundos por sesión de
+- La reproducción se limita a los directorios permitidos y a una vez cada 30 segundos por sesión de
   cada agente. Los proyectos privados o deshabilitados permanecen en silencio.
 - La renovación y el permiso de voz se configuran por separado. El journal mantiene su propio flujo
   de trabajo y no controla las frases ni el audio.
@@ -112,7 +112,7 @@ configurable document.
 - The agent writes two phrases per enabled project once per local day; the helper validates and
   saves the catalog. There is no generation service, model API or scheduler.
 - Daily phrases expire after seven days during that project's renewal.
-- Playback is limited to allowed directories and once every 90 seconds per agent session. Private or
+- Playback is limited to allowed directories and once every 30 seconds per agent session. Private or
   disabled projects remain silent.
 - Renewal and voice permissions are separate. The journal keeps its own workflow and does not
   control phrases or audio.

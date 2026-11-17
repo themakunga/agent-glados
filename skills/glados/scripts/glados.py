@@ -245,7 +245,7 @@ def speak(vault, config, agent, cwd, session):
     marker = state_dir(vault) / f"spoken-{key}.json"
     with lock(marker.with_suffix(".lock")):
         now = time.time()
-        if marker.exists() and now - json.loads(marker.read_text()) < 90:
+        if marker.exists() and now - json.loads(marker.read_text()) < 30:
             return False
         executable = shutil.which("glados-say")
         if not executable:

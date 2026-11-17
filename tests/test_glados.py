@@ -213,6 +213,22 @@ class CatalogTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             g.catalog_at(self.vault, self.config)
 
+    def test_completion_resumes_after_thirty_seconds(self):
+        renew_once(self.vault)
+        self.config["tts"]["enable"] = True
+        self.config["tts"]["hooks"]["example"]["completion"] = True
+        with (
+            patch.object(g.shutil, "which", return_value="glados-say"),
+            patch.object(g.subprocess, "run") as run,
+            patch.object(g.time, "time", return_value=1000) as clock,
+        ):
+            self.assertTrue(g.speak(self.vault, self.config, "codex", str(self.project), "s"))
+            clock.return_value = 1029.999
+            self.assertFalse(g.speak(self.vault, self.config, "codex", str(self.project), "s"))
+            clock.return_value = 1030
+            self.assertTrue(g.speak(self.vault, self.config, "codex", str(self.project), "s"))
+            self.assertEqual(run.call_count, 2)
+
     def test_scope_throttle_and_private_child(self):
         renew_once(self.vault)
         self.config["tts"]["enable"] = True

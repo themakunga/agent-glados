@@ -60,7 +60,7 @@ python scripts/glados.py --agent codex speak --cwd /enabled/project --session SE
 Global, agent, per-agent `tts_enable`, project, TTS and completion settings must all allow playback.
 The current directory must belong to an enabled root in the GLaDOS configuration. Private or
 disabled nested projects remain silent. Missing session identity or matching phrases remains silent.
-Runtime state is local; playback is limited to once per 90 seconds per agent session, including
+Runtime state is local; playback is limited to once per 30 seconds per agent session, including
 parallel requests. Other events and other agents remain silent.
 
 Report validation, renewal or playback errors in text. Do not claim execution merely because hooks
