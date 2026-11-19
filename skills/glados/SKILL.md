@@ -4,12 +4,26 @@ description: >-
   Configure GLaDOS coding-agent phrase renewal and scoped completion speech. Use for GLaDOS
   installation, daily catalog renewal, lifecycle integration, validation or integration removal.
   Renew phrases and play already-authorized speech without repeated confirmation.
+metadata:
+  repo: agent-glados
+  source_path: skills/glados
 ---
 
 # GLaDOS
 
 Use the runtime's Python 3.11+ with PyYAML and jsonschema already provided. Keep personality in the
 configured document; do not copy it here.
+
+## Source and updates
+
+This is the `glados` skill from [agent-glados](https://github.com/themakunga/agent-glados), under
+`skills/glados` in that repository. An amgmt installation at `skills/glados` is a copy of that
+subtree; amgmt owns the configuration and phrase catalog, while agent-glados owns this skill.
+
+Make skill changes in the agent-glados checkout, validate, commit and push them there first. Pull
+its configured upstream branch, then synchronize the `skills/glados` subtree into the installed
+skill directory, preserving unpublished local changes. Pulling agent-glados alone does not update a
+separate amgmt copy. Verify the installed files and Codex discovery after syncing.
 
 ## Permissions
 
