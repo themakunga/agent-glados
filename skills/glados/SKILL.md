@@ -17,7 +17,7 @@ configured document; do not copy it here.
 ## Source and updates
 
 This is the `glados` skill from [agent-glados](https://github.com/themakunga/agent-glados), under
-`skills/glados` in that repository. An amgmt installation at `skills/glados` is a copy of that
+`skills/glados` in that repository. An amgmt installation at `skills/agent-glados` is a copy of that
 subtree; amgmt owns the configuration and phrase catalog, while agent-glados owns this skill.
 
 Make skill changes in the agent-glados checkout, validate, commit and push them there first. Pull
