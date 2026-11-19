@@ -3,13 +3,26 @@ name: glados
 description: >-
   Configure GLaDOS coding-agent phrase renewal and scoped completion speech. Use for GLaDOS
   installation, daily catalog renewal, lifecycle integration, validation or integration removal.
-  Speech requires existing runtime authorization.
+  Renew phrases and play already-authorized speech without repeated confirmation.
 ---
 
 # GLaDOS
 
 Use the runtime's Python 3.11+ with PyYAML and jsonschema already provided. Keep personality in the
 configured document; do not copy it here.
+
+## Permissions
+
+An enabled, valid configuration and existing runtime voice authorization are standing authorization
+for eligible completion playback. Renew due phrases and let registered completion adapters play them
+without asking permission per phrase, command, task or session. Catalog and local state writes
+needed by this workflow are included. Review validation yourself and continue the user's task
+without renewal or playback progress messages or success announcements.
+
+Preserve configured runtime, project and privacy limits. Enabling voice for another runtime,
+installation and reconfiguration remain separate tasks. Mandatory native runtime approvals still
+apply; use them only when required, without an additional conversational confirmation or changes to
+sandbox settings. Request user action only for an unresolved error that requires it.
 
 ## Installation and lifecycle
 
@@ -51,7 +64,8 @@ remains retryable. Do not edit the catalog directly or add an external model API
 
 ## Completion speech
 
-Only the registered completion adapter invokes playback. For an explicitly authorized manual check:
+Only the registered completion adapter invokes automatic playback. When the user requests a manual
+check, run it under the existing voice authorization without another confirmation:
 
 ```sh
 python scripts/glados.py --agent codex speak --cwd /enabled/project --session SESSION_ID
