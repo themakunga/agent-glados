@@ -194,11 +194,11 @@ See the [integration and migration guide](skills/glados/references/integration.m
 
 ## Repository reference
 
-| Path | Purpose |
-| --- | --- |
-| [`skills/`](skills/) | Agent skills and their supporting resources |
-| [`tests/`](tests/) | Tests and regression checks |
-| [`pyproject.toml`](pyproject.toml) | Python project metadata |
+| Path                               | Purpose                                     |
+| ---------------------------------- | ------------------------------------------- |
+| [`skills/`](skills/)               | Agent skills and their supporting resources |
+| [`tests/`](tests/)                 | Tests and regression checks                 |
+| [`pyproject.toml`](pyproject.toml) | Python project metadata                     |
 
-The default branch is `feat/glados-skill`. Use the tracked manifests and scripts above
-when preparing changes; keep local credentials and generated files out of commits.
+The default branch is `feat/glados-skill`. Use the tracked manifests and scripts above when
+preparing changes; keep local credentials and generated files out of commits.
