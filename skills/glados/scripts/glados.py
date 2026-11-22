@@ -210,7 +210,7 @@ def renew(vault, agent, name, proposals):
         return True
 
 
-def speak(vault, config, agent, cwd, session):
+def speak(vault, config, agent, cwd, session, *, event="completion"):
     if (
         not session
         or not cwd
@@ -228,8 +228,19 @@ def speak(vault, config, agent, cwd, session):
     if not matches:
         return False
     project, _ = max(matches, key=lambda pair: len(pair[1].parts))
-    if not config["tts"]["hooks"].get(project["name"], {}).get("completion", False):
+    if not config["tts"]["hooks"].get(project["name"], {}).get(event, False):
         return False
+    if event == "permission":
+        phrase = "Your approval is required. Try to look decisive."
+        if len(phrase) > config["tts"]["max_length"]:
+            return False
+        executable = shutil.which("glados-say")
+        if not executable:
+            raise ValueError("glados-say is unavailable; declare it through Nix")
+        key = hashlib.sha256(f"{agent}:{session}".encode()).hexdigest()
+        with lock(state_dir(vault) / f"permission-{key}.lock"):
+            subprocess.run([executable, phrase], check=True, timeout=300)
+        return True
     pool = [
         p["phrase"]
         for p in catalog_at(vault, config)["phrases"]
@@ -286,7 +297,11 @@ def hook(vault, config, agent, payload):
             if context
             else {}
         )
-    if event in ("Stop", "post_llm_call") and not payload.get("stop_hook_active"):
+    if event == "PermissionRequest" and agent == "codex":
+        speak(
+            vault, config, agent, payload.get("cwd"), payload.get("session_id"), event="permission"
+        )
+    elif event in ("Stop", "post_llm_call") and not payload.get("stop_hook_active"):
         speak(vault, config, agent, payload.get("cwd"), payload.get("session_id"))
     return {}
 

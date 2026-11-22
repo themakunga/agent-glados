@@ -12,10 +12,10 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "skills/glados/scripts"))
-import glados as g
-import install
-import integrate
-import migrate
+import glados as g  # noqa: E402
+import install  # noqa: E402
+import integrate  # noqa: E402
+import migrate  # noqa: E402
 
 
 def renew_once(vault):
@@ -94,6 +94,32 @@ class CatalogTests(unittest.TestCase):
         self.assertEqual((self.vault / ".glados/phrases.yaml").read_bytes(), catalog)
         self.assertEqual(len(list(self.vault.glob(".glados.config.yaml.backup-*"))), 1)
 
+    def test_permission_request_is_registered(self):
+        with patch("sys.stdout", new_callable=io.StringIO):
+            integrate.integrate(self.vault, "codex", confirmed=True)
+        hooks = json.loads((self.home / ".codex/hooks.json").read_text())["hooks"]
+        self.assertIn("PermissionRequest", hooks)
+        self.assertEqual(hooks["PermissionRequest"][0]["hooks"][0]["timeout"], 300)
+
+    def test_permission_request_speaks_without_an_approval_decision(self):
+        self.config["tts"]["enable"] = True
+        self.config["tts"]["hooks"]["example"]["permission"] = True
+        payload = {
+            "hook_event_name": "PermissionRequest",
+            "cwd": str(self.project),
+            "session_id": "session",
+            "turn_id": "turn",
+            "tool_name": "shell",
+            "tool_input": {"command": "echo test"},
+        }
+        with (
+            patch.object(g.shutil, "which", return_value="glados-say"),
+            patch.object(g.subprocess, "run") as run,
+        ):
+            self.assertEqual(g.hook(self.vault, self.config, "codex", payload), {})
+            self.assertEqual(run.call_count, 1)
+            self.assertIn("approval", run.call_args.args[0][1].lower())
+
     def test_other_adapters_and_errors(self):
         for agent in ("claude-code", "hermes"):
             self.config["agents"][agent]["enable"] = True
@@ -117,6 +143,40 @@ class CatalogTests(unittest.TestCase):
             self.config["agents"]["codex"]["tts_enable"] = False
             g.speak(self.vault, self.config, "codex", str(self.project), "test")
             run.assert_not_called()
+
+    def test_permission_voice_is_independent_and_stays_scoped(self):
+        renew_once(self.vault)
+        self.config["tts"]["enable"] = True
+        settings = self.config["tts"]["hooks"]["example"]
+        settings.update(completion=True, permission=True)
+        g.validate("config", self.config)
+        payload = {
+            "hook_event_name": "PermissionRequest",
+            "cwd": str(self.project),
+            "session_id": "session",
+        }
+        with (
+            patch.object(g.shutil, "which", return_value="glados-say"),
+            patch.object(g.subprocess, "run") as run,
+            patch.object(g.time, "time", return_value=1000),
+        ):
+            self.assertTrue(g.speak(self.vault, self.config, "codex", str(self.project), "session"))
+            for _ in range(2):
+                self.assertEqual(g.hook(self.vault, self.config, "codex", payload), {})
+            self.assertFalse(
+                g.speak(self.vault, self.config, "codex", str(self.project), "session")
+            )
+            self.assertEqual(run.call_count, 3)
+            settings["permission"] = False
+            g.hook(self.vault, self.config, "codex", payload)
+            settings["permission"] = True
+            g.hook(self.vault, self.config, "codex", dict(payload, cwd=str(self.home)))
+            self.config["agents"]["codex"]["tts_enable"] = False
+            g.hook(self.vault, self.config, "codex", payload)
+            self.config["agents"]["codex"]["tts_enable"] = True
+            self.config["tts"]["max_length"] = 5
+            g.hook(self.vault, self.config, "codex", payload)
+            self.assertEqual(run.call_count, 3)
 
     def test_migration_filters_and_preserves_legacy(self):
         legacy = self.home / ".vaults/journal"

@@ -21,8 +21,8 @@ autorizada. La personalidad se mantiene en un documento configurable.
   guarda el catálogo. No incluye un servicio de generación, una API de modelos ni un programador de
   tareas.
 - Las frases diarias caducan a los siete días durante la renovación del proyecto.
-- La reproducción se limita a los directorios permitidos y a una vez cada 30 segundos por sesión de
-  cada agente. Los proyectos privados o deshabilitados permanecen en silencio.
+- Completion speech is limited to allowed directories and once every 30 seconds per agent session.
+  Project-enabled Codex approval alerts are independent; private or disabled projects remain silent.
 - La renovación y el permiso de voz se configuran por separado. El journal mantiene su propio flujo
   de trabajo y no controla las frases ni el audio.
 
@@ -88,7 +88,7 @@ pkgs.python3.withPackages (ps: [ ps.pyyaml ps.jsonschema ])
 
 | Agente                     | Adaptador incluido                      | Verificación necesaria                                                     |
 | -------------------------- | --------------------------------------- | -------------------------------------------------------------------------- |
-| Codex                      | Solicitud y finalización                | Eventos, confianza nativa y sesión nueva.                                  |
+| Codex                      | Request, approval and completion        | Eventos, confianza nativa y sesión nueva.                                  |
 | Claude Code                | Solicitud y finalización                | Eventos y sesión nueva.                                                    |
 | Hermes                     | Antes y después de la llamada al modelo | Compatibilidad de la versión instalada y aprobación de hooks.              |
 | Gemini, OpenClaw, ZeroClaw | Descubrimiento de la skill              | Renovación siguiendo sus instrucciones; sin adaptador automático incluido. |
@@ -112,8 +112,8 @@ configurable document.
 - The agent writes two phrases per enabled project once per local day; the helper validates and
   saves the catalog. There is no generation service, model API or scheduler.
 - Daily phrases expire after seven days during that project's renewal.
-- Playback is limited to allowed directories and once every 30 seconds per agent session. Private or
-  disabled projects remain silent.
+- Completion speech is limited to allowed directories and once every 30 seconds per agent session.
+  Project-enabled Codex approval alerts are independent; private or disabled projects remain silent.
 - Renewal and voice permissions are separate. The journal keeps its own workflow and does not
   control phrases or audio.
 
@@ -176,16 +176,17 @@ pkgs.python3.withPackages (ps: [ ps.pyyaml ps.jsonschema ])
 
 ### Agents and integration
 
-| Agent                      | Included adapter                | Required verification                                          |
-| -------------------------- | ------------------------------- | -------------------------------------------------------------- |
-| Codex                      | Request and completion          | Events, native trust and a fresh session.                      |
-| Claude Code                | Request and completion          | Events and a fresh session.                                    |
-| Hermes                     | Before and after the model call | Installed-version compatibility and hook approval.             |
-| Gemini, OpenClaw, ZeroClaw | Skill discovery                 | Renewal by following the skill; no automatic adapter included. |
+| Agent                      | Included adapter                 | Required verification                                          |
+| -------------------------- | -------------------------------- | -------------------------------------------------------------- |
+| Codex                      | Request, approval and completion | Events, native trust and a fresh session.                      |
+| Claude Code                | Request and completion           | Events and a fresh session.                                    |
+| Hermes                     | Before and after the model call  | Installed-version compatibility and hook approval.             |
+| Gemini, OpenClaw, ZeroClaw | Skill discovery                  | Renewal by following the skill; no automatic adapter included. |
 
-Voice requires global, agent, project and completion-event permission, plus an allowed directory, an
-identifiable session and valid phrases. Exclude secrets, credentials and confidential content when
-writing phrases.
+Voice requires global, agent, project and event permission, plus an allowed directory and an
+identifiable session. Completion uses validated catalog phrases; approval alerts use a generic
+sentence and leave the native approval decision untouched. Exclude secrets, credentials and
+confidential content when writing phrases.
 
 See the [integration and migration guide](skills/glados/references/integration.md),
 [example configuration](skills/glados/templates/config.example.yaml) and

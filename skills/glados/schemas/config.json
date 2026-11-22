@@ -120,6 +120,9 @@
             "properties": {
               "completion": {
                 "type": "boolean"
+              },
+              "permission": {
+                "type": "boolean"
               }
             },
             "required": ["completion"],

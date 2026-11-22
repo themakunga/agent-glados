@@ -81,7 +81,11 @@ def install():
             "completion": boolean(
                 "Permit completion voice for " + name,
                 tts.get("hooks", {}).get(name, {}).get("completion", False),
-            )
+            ),
+            "permission": boolean(
+                "Permit Codex approval-request voice for " + name,
+                tts.get("hooks", {}).get(name, {}).get("permission", False),
+            ),
         }
     validate("config", config)
     if len({p["name"] for p in config["projects"]}) != count:

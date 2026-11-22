@@ -1,9 +1,9 @@
 ---
 name: glados
 description: >-
-  Configure GLaDOS coding-agent phrase renewal and scoped completion speech. Use for GLaDOS
-  installation, daily catalog renewal, lifecycle integration, validation or integration removal.
-  Renew phrases and play already-authorized speech without repeated confirmation.
+  Configure GLaDOS phrase renewal, scoped completion speech and Codex approval alerts. Use for
+  GLaDOS installation, daily catalog renewal, lifecycle integration, validation or integration
+  removal. Renew phrases and play already-authorized speech without repeated confirmation.
 metadata:
   repo: agent-glados
   source_path: skills/glados
@@ -28,10 +28,11 @@ separate amgmt copy. Verify the installed files and Codex discovery after syncin
 ## Permissions
 
 An enabled, valid configuration and existing runtime voice authorization are standing authorization
-for eligible completion playback. Renew due phrases and let registered completion adapters play them
-without asking permission per phrase, command, task or session. Catalog and local state writes
-needed by this workflow are included. Review validation yourself and continue the user's task
-without renewal or playback progress messages or success announcements.
+for eligible completion playback and explicitly enabled Codex approval alerts. Renew due phrases and
+let registered completion adapters play them without asking permission per phrase, command, task or
+session. Catalog and local state writes needed by this workflow are included. Review validation
+yourself and continue the user's task without renewal or playback progress messages or success
+announcements.
 
 Preserve configured runtime, project and privacy limits. Enabling voice for another runtime,
 installation and reconfiguration remain separate tasks. Mandatory native runtime approvals still
@@ -89,7 +90,17 @@ Global, agent, per-agent `tts_enable`, project, TTS and completion settings must
 The current directory must belong to an enabled root in the GLaDOS configuration. Private or
 disabled nested projects remain silent. Missing session identity or matching phrases remains silent.
 Runtime state is local; playback is limited to once per 30 seconds per agent session, including
-parallel requests. Other events and other agents remain silent.
+parallel completion requests. Other agents remain silent unless their voice is enabled.
+
+## Codex approval alerts
+
+For projects with `tts.hooks.<project>.permission: true`, the registered `PermissionRequest` hook
+speaks a short, generic English approval alert. Each native approval request is independent of the
+completion throttle. The alert contains no tool arguments or command details and needs no catalog
+phrase or additional conversational confirmation. Other voice, directory and privacy gates apply.
+The hook returns `{}` and leaves the native approval decision to the user. It does not approve, deny
+or rewrite the requested operation. Register the hook through the integration procedure and review
+its trust in Codex's native `/hooks` interface.
 
 Report validation, renewal or playback errors in text. Do not claim execution merely because hooks
 or skills are installed. Written responses follow the user's language; catalog phrases remain

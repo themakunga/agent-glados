@@ -20,6 +20,8 @@ def integrate(vault, agent, remove=False, confirmed=False, migrate_legacy=False)
     else:
         path = Path.home() / (".codex/hooks.json" if agent == "codex" else ".claude/settings.json")
         events = ("UserPromptSubmit", "Stop")
+        if agent == "codex":
+            events = ("UserPromptSubmit", "PermissionRequest", "Stop")
     path = path.resolve()
     if remove and not (state_dir(vault) / f"integration-{agent}.json").exists():
         return
