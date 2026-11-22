@@ -191,3 +191,14 @@ confidential content when writing phrases.
 See the [integration and migration guide](skills/glados/references/integration.md),
 [example configuration](skills/glados/templates/config.example.yaml) and
 [compatibility evidence](skills/glados/references/inventory.md).
+
+## Repository reference
+
+| Path | Purpose |
+| --- | --- |
+| [`skills/`](skills/) | Agent skills and their supporting resources |
+| [`tests/`](tests/) | Tests and regression checks |
+| [`pyproject.toml`](pyproject.toml) | Python project metadata |
+
+The default branch is `feat/glados-skill`. Use the tracked manifests and scripts above
+when preparing changes; keep local credentials and generated files out of commits.
