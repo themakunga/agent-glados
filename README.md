@@ -1,5 +1,7 @@
 # GLaDOS
 
+![Markdown](https://img.shields.io/badge/Markdown-000000?style=flat-square&logo=markdown&logoColor=white)
+
 <!-- cspell:ignore pkgs -->
 
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](#requirements)
