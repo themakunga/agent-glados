@@ -176,17 +176,18 @@ pkgs.python3.withPackages (ps: [ ps.pyyaml ps.jsonschema ])
 
 ### Agents and integration
 
-| Agent                      | Included adapter                 | Required verification                                          |
-| -------------------------- | -------------------------------- | -------------------------------------------------------------- |
-| Codex                      | Request, approval and completion | Events, native trust and a fresh session.                      |
-| Claude Code                | Request and completion           | Events and a fresh session.                                    |
-| Hermes                     | Before and after the model call  | Installed-version compatibility and hook approval.             |
-| Gemini, OpenClaw, ZeroClaw | Skill discovery                  | Renewal by following the skill; no automatic adapter included. |
+| Agent                      | Included adapter                        | Required verification                                          |
+| -------------------------- | --------------------------------------- | -------------------------------------------------------------- |
+| Codex                      | Request, approval, input and completion | Events, native trust and a fresh session.                      |
+| Claude Code                | Request and completion                  | Events and a fresh session.                                    |
+| Hermes                     | Before and after the model call         | Installed-version compatibility and hook approval.             |
+| Gemini, OpenClaw, ZeroClaw | Skill discovery                         | Renewal by following the skill; no automatic adapter included. |
 
 Voice requires global, agent, project and event permission, plus an allowed directory and an
-identifiable session. Completion uses validated catalog phrases; approval alerts use a generic
-sentence and leave the native approval decision untouched. Exclude secrets, credentials and
-confidential content when writing phrases.
+identifiable session. Completion uses validated catalog phrases. Approval and input alerts use
+separate generic pools in `.glados/alerts.yaml`, with at least ten distinct phrases each. These
+pools do not expire and avoid immediate repetition. Native approvals and answers remain untouched;
+question text, tool arguments and confidential content are excluded from speech.
 
 See the [integration and migration guide](skills/glados/references/integration.md),
 [example configuration](skills/glados/templates/config.example.yaml) and

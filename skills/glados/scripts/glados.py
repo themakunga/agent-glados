@@ -22,6 +22,7 @@ from jsonschema import Draft202012Validator, FormatChecker, ValidationError
 
 SKILL = Path(__file__).resolve().parents[1]
 AGENTS = ("codex", "claude-code", "hermes", "gemini", "openclaw", "zeroclaw")
+INPUT_TOOLS = r"(^|[._])request_user_input(_async)?$"
 
 
 class UniqueLoader(yaml.SafeLoader):
@@ -104,6 +105,22 @@ def catalog_at(vault, config):
     return data
 
 
+def alerts_at(vault):
+    path = vault / ".glados/alerts.yaml"
+    return validate(
+        "alerts", read(path if path.exists() else SKILL / "templates/alerts.example.yaml")
+    )
+
+
+def renew_alerts(vault, proposals):
+    vault, config = config_at(vault)
+    validate("alerts", proposals)
+    if any(len(text) > config["tts"]["max_length"] for pool in proposals.values() for text in pool):
+        raise ValueError("Alert exceeds configured length")
+    with lock(state_dir(vault) / "alerts.lock"):
+        atomic(vault / ".glados/alerts.yaml", yaml.safe_dump(proposals, sort_keys=False))
+
+
 def atomic(path, content):
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, temporary = tempfile.mkstemp(dir=path.parent)
@@ -142,6 +159,7 @@ def projects(config, agent):
 
 
 def due(vault, config, agent):
+    alerts_at(vault)
     data = catalog_at(vault, config)
     return [
         p["name"]
@@ -230,16 +248,22 @@ def speak(vault, config, agent, cwd, session, *, event="completion"):
     project, _ = max(matches, key=lambda pair: len(pair[1].parts))
     if not config["tts"]["hooks"].get(project["name"], {}).get(event, False):
         return False
-    if event == "permission":
-        phrase = "Your approval is required. Try to look decisive."
-        if len(phrase) > config["tts"]["max_length"]:
+    if event in ("permission", "input"):
+        pool = [
+            text for text in alerts_at(vault)[event] if len(text) <= config["tts"]["max_length"]
+        ]
+        if not pool:
             return False
         executable = shutil.which("glados-say")
         if not executable:
             raise ValueError("glados-say is unavailable; declare it through Nix")
-        key = hashlib.sha256(f"{agent}:{session}".encode()).hexdigest()
-        with lock(state_dir(vault) / f"permission-{key}.lock"):
+        key = hashlib.sha256(f"{agent}:{project['name']}:{event}".encode()).hexdigest()
+        previous_path = state_dir(vault) / f"last-alert-{key}.txt"
+        with lock(previous_path.with_suffix(".lock")):
+            previous = previous_path.read_text() if previous_path.exists() else None
+            phrase = random.choice([text for text in pool if text != previous] or pool)
             subprocess.run([executable, phrase], check=True, timeout=300)
+            atomic(previous_path, phrase)
         return True
     pool = [
         p["phrase"]
@@ -301,6 +325,13 @@ def hook(vault, config, agent, payload):
         speak(
             vault, config, agent, payload.get("cwd"), payload.get("session_id"), event="permission"
         )
+    elif (
+        event == "PreToolUse"
+        and agent == "codex"
+        and isinstance(payload.get("tool_name"), str)
+        and re.search(INPUT_TOOLS, payload["tool_name"])
+    ):
+        speak(vault, config, agent, payload.get("cwd"), payload.get("session_id"), event="input")
     elif event in ("Stop", "post_llm_call") and not payload.get("stop_hook_active"):
         speak(vault, config, agent, payload.get("cwd"), payload.get("session_id"))
     return {}
@@ -311,7 +342,7 @@ def main():
     parser.add_argument("--vault", default=str(Path.home() / ".vaults/amgmt"))
     parser.add_argument("--agent", choices=AGENTS, required=True)
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("validate", "due", "request", "hook"):
+    for name in ("validate", "due", "request", "hook", "renew-alerts"):
         sub.add_parser(name)
     renewal = sub.add_parser("renew")
     renewal.add_argument("project")
@@ -322,6 +353,7 @@ def main():
     vault, config = config_at(args.vault)
     if args.command == "validate":
         catalog_at(vault, config)
+        alerts_at(vault)
         print("Configuration and catalog are valid.")
     elif args.command == "due":
         print(json.dumps(due(vault, config, args.agent)))
@@ -331,6 +363,8 @@ def main():
         print(renew(vault, args.agent, args.project, json.load(sys.stdin)))
     elif args.command == "hook":
         print(json.dumps(hook(vault, config, args.agent, json.load(sys.stdin))))
+    elif args.command == "renew-alerts":
+        renew_alerts(vault, json.load(sys.stdin))
     else:
         speak(vault, config, args.agent, args.cwd, args.session)
 

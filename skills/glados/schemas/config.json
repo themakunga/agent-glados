@@ -123,6 +123,9 @@
               },
               "permission": {
                 "type": "boolean"
+              },
+              "input": {
+                "type": "boolean"
               }
             },
             "required": ["completion"],

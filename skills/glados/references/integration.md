@@ -31,10 +31,11 @@ reviewed catalog migration; installation does not discard phrases.
 
 The request adapter returns a context reminder for the executing agent to renew; it does not
 generate phrases. Completion ignores response text and chooses only validated catalog phrases. Codex
-also registers `PermissionRequest` for project-enabled approval voice. It speaks only a generic
-alert and returns no approval decision. This event is independent of completion throttling. Hermes
-uses shell hooks, not gateway-only handlers. Missing CWD/session fields prevent playback. Do not
-substitute a default session.
+also registers `PermissionRequest` for project-enabled approval voice and a `PreToolUse` matcher for
+its user-input tools. Both use generic alert pools with at least ten phrases per category,
+independent of completion throttling, and return no approval decision or answer. Hermes uses shell
+hooks, not gateway-only handlers. Missing CWD/session fields prevent playback. Do not substitute a
+default session.
 
 After confirming local event payloads and existing voice authorization, use:
 

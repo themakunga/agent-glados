@@ -77,6 +77,8 @@ class CatalogTests(unittest.TestCase):
         self.assertFalse(any(p["created_at"].startswith("2000") for p in kept))
 
     def test_reinstall_preserves_catalog_and_creates_backup(self):
+        self.config["tts"]["hooks"]["example"]["input"] = True
+        self.save()
         renew_once(self.vault)
         catalog = (self.vault / ".glados/phrases.yaml").read_bytes()
         with (
@@ -93,6 +95,8 @@ class CatalogTests(unittest.TestCase):
             install.install()
         self.assertEqual((self.vault / ".glados/phrases.yaml").read_bytes(), catalog)
         self.assertEqual(len(list(self.vault.glob(".glados.config.yaml.backup-*"))), 1)
+        installed = g.read(self.vault / ".glados.config.yaml")
+        self.assertTrue(installed["tts"]["hooks"]["example"]["input"])
 
     def test_permission_request_is_registered(self):
         with patch("sys.stdout", new_callable=io.StringIO):
@@ -100,6 +104,120 @@ class CatalogTests(unittest.TestCase):
         hooks = json.loads((self.home / ".codex/hooks.json").read_text())["hooks"]
         self.assertIn("PermissionRequest", hooks)
         self.assertEqual(hooks["PermissionRequest"][0]["hooks"][0]["timeout"], 300)
+        self.assertEqual(hooks["PreToolUse"][0]["matcher"], g.INPUT_TOOLS)
+
+    def test_alert_banks_remain_available_after_completion_renewal(self):
+        pools = g.alerts_at(self.vault)
+        for pool in pools.values():
+            self.assertGreaterEqual(len(set(pool)), 10)
+            self.assertTrue(all(len(text) <= self.config["tts"]["max_length"] for text in pool))
+        g.renew_alerts(self.vault, pools)
+        path = self.vault / ".glados/alerts.yaml"
+        before = path.read_bytes()
+        renew_once(self.vault)
+        self.assertEqual(path.read_bytes(), before)
+        self.assertEqual(g.alerts_at(self.vault), pools)
+
+    def test_invalid_alert_updates_preserve_both_banks(self):
+        pools = g.alerts_at(self.vault)
+        g.renew_alerts(self.vault, pools)
+        path = self.vault / ".glados/alerts.yaml"
+        before = path.read_bytes()
+        for replacement in (
+            pools["permission"][:9],
+            [pools["permission"][0]] * 10,
+            ["This  contains duplicate spaces."] + pools["permission"][1:],
+            ["This contains a\x00control character."] + pools["permission"][1:],
+            ["x" * 101] + pools["permission"][1:],
+        ):
+            with (
+                self.subTest(replacement=replacement),
+                self.assertRaises((ValueError, g.ValidationError)),
+            ):
+                g.renew_alerts(self.vault, dict(pools, permission=replacement))
+            self.assertEqual(path.read_bytes(), before)
+        path.write_text(g.yaml.safe_dump(dict(pools, input=pools["input"][:9])))
+        with self.assertRaises(g.ValidationError):
+            g.due(self.vault, self.config, "codex")
+
+    def test_alerts_rotate_without_using_completion_throttle(self):
+        self.config["tts"]["enable"] = True
+        self.config["tts"]["hooks"]["example"].update(permission=True, input=True)
+        pools = g.alerts_at(self.vault)
+        with (
+            patch.object(g.shutil, "which", return_value="glados-say"),
+            patch.object(g.random, "choice", side_effect=lambda pool: pool[0]),
+            patch.object(g.subprocess, "run") as run,
+        ):
+            for event in ("permission", "input"):
+                for _ in range(3):
+                    self.assertTrue(
+                        g.speak(
+                            self.vault,
+                            self.config,
+                            "codex",
+                            str(self.project),
+                            "session",
+                            event=event,
+                        )
+                    )
+                spoken = [call.args[0][1] for call in run.call_args_list[-3:]]
+                self.assertTrue(all(text in pools[event] for text in spoken))
+                self.assertNotEqual(spoken[0], spoken[1])
+                self.assertNotEqual(spoken[1], spoken[2])
+                self.assertTrue(
+                    g.speak(
+                        self.vault,
+                        self.config,
+                        "codex",
+                        str(self.project),
+                        "new-session",
+                        event=event,
+                    )
+                )
+                self.assertNotEqual(spoken[-1], run.call_args.args[0][1])
+            self.assertEqual(run.call_count, 8)
+        self.assertFalse(list(g.state_dir(self.vault).glob("spoken-*")))
+
+    def test_input_hook_is_scoped_and_never_reads_the_question(self):
+        self.config["tts"]["enable"] = True
+        settings = self.config["tts"]["hooks"]["example"]
+        settings["input"] = True
+        payload = {
+            "hook_event_name": "PreToolUse",
+            "tool_name": "functions.request_user_input_async",
+            "tool_input": {"questions": "private-question-payload"},
+            "cwd": str(self.project),
+            "session_id": "session",
+        }
+        with (
+            patch.object(g.shutil, "which", return_value="glados-say"),
+            patch.object(g.subprocess, "run") as run,
+        ):
+            for name in (
+                "request_user_input",
+                "request_user_input_async",
+                "functions.request_user_input_async",
+            ):
+                self.assertEqual(
+                    g.hook(self.vault, self.config, "codex", dict(payload, tool_name=name)), {}
+                )
+            self.assertEqual(run.call_count, 3)
+            self.assertTrue(
+                all("private-question-payload" not in str(call) for call in run.call_args_list)
+            )
+            for name in ("Bash", "exec_command", "not_request_user_input_helper", None):
+                g.hook(self.vault, self.config, "codex", dict(payload, tool_name=name))
+            settings["input"] = False
+            g.hook(self.vault, self.config, "codex", payload)
+            settings["input"] = True
+            self.config["agents"]["codex"]["tts_enable"] = False
+            g.hook(self.vault, self.config, "codex", payload)
+            self.config["agents"]["codex"]["tts_enable"] = True
+            g.hook(self.vault, self.config, "codex", dict(payload, cwd=str(self.home)))
+            g.hook(self.vault, self.config, "codex", dict(payload, session_id=None))
+            g.hook(self.vault, self.config, "claude-code", payload)
+            self.assertEqual(run.call_count, 3)
 
     def test_permission_request_speaks_without_an_approval_decision(self):
         self.config["tts"]["enable"] = True

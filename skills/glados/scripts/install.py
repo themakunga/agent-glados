@@ -86,6 +86,10 @@ def install():
                 "Permit Codex approval-request voice for " + name,
                 tts.get("hooks", {}).get(name, {}).get("permission", False),
             ),
+            "input": boolean(
+                "Permit Codex input-request voice for " + name,
+                tts.get("hooks", {}).get(name, {}).get("input", False),
+            ),
         }
     validate("config", config)
     if len({p["name"] for p in config["projects"]}) != count:

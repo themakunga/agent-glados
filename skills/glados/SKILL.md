@@ -1,7 +1,7 @@
 ---
 name: glados
 description: >-
-  Configure GLaDOS phrase renewal, scoped completion speech and Codex approval alerts. Use for
+  Configure GLaDOS phrase renewal, scoped completion speech and Codex approval/input alerts. Use for
   GLaDOS installation, daily catalog renewal, lifecycle integration, validation or integration
   removal. Renew phrases and play already-authorized speech without repeated confirmation.
 metadata:
@@ -92,15 +92,30 @@ disabled nested projects remain silent. Missing session identity or matching phr
 Runtime state is local; playback is limited to once per 30 seconds per agent session, including
 parallel completion requests. Other agents remain silent unless their voice is enabled.
 
-## Codex approval alerts
+## Approval and input phrases
+
+Keep at least ten distinct, generic English phrases for each of `permission` and `input` in
+`.glados/alerts.yaml`. These pools do not expire with daily completion phrases. The packaged
+`templates/alerts.example.yaml` provides ten phrases per category when the file is absent. The daily
+`due` command validates the minimum count, uniqueness and normalized text. Preserve existing valid
+phrases when replenishing a pool, and respect `tts.max_length`. Submit the complete two-pool JSON
+object through the helper:
+
+```sh
+python scripts/glados.py --agent codex renew-alerts < /tmp/glados-alerts.json
+```
+
+## Codex attention alerts
 
 For projects with `tts.hooks.<project>.permission: true`, the registered `PermissionRequest` hook
-speaks a short, generic English approval alert. Each native approval request is independent of the
-completion throttle. The alert contains no tool arguments or command details and needs no catalog
-phrase or additional conversational confirmation. Other voice, directory and privacy gates apply.
-The hook returns `{}` and leaves the native approval decision to the user. It does not approve, deny
-or rewrite the requested operation. Register the hook through the integration procedure and review
-its trust in Codex's native `/hooks` interface.
+speaks a phrase from the approval pool. With `tts.hooks.<project>.input: true`, a narrowly matched
+`PreToolUse` hook speaks from the input pool for `request_user_input` and
+`request_user_input_async`, including qualified names. Both alerts are independent of completion
+throttling and avoid an immediate repeat within the same agent, project and category, including
+across sessions. Alerts contain no tool arguments, question text or command details. Existing voice
+authorization and all directory/privacy gates apply. Hooks return `{}`; approval decisions and user
+answers remain entirely native. Register through the integration procedure and review native
+`/hooks` trust.
 
 Report validation, renewal or playback errors in text. Do not claim execution merely because hooks
 or skills are installed. Written responses follow the user's language; catalog phrases remain

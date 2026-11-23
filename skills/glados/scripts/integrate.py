@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 import yaml
-from glados import atomic, config_at, lock, state_dir
+from glados import INPUT_TOOLS, atomic, config_at, lock, state_dir
 
 
 def integrate(vault, agent, remove=False, confirmed=False, migrate_legacy=False):
@@ -21,7 +21,7 @@ def integrate(vault, agent, remove=False, confirmed=False, migrate_legacy=False)
         path = Path.home() / (".codex/hooks.json" if agent == "codex" else ".claude/settings.json")
         events = ("UserPromptSubmit", "Stop")
         if agent == "codex":
-            events = ("UserPromptSubmit", "PermissionRequest", "Stop")
+            events = ("UserPromptSubmit", "PermissionRequest", "PreToolUse", "Stop")
     path = path.resolve()
     if remove and not (state_dir(vault) / f"integration-{agent}.json").exists():
         return
@@ -79,6 +79,8 @@ def integrate(vault, agent, remove=False, confirmed=False, migrate_legacy=False)
                         ]
                     }
                 )
+                if agent == "codex" and event == "PreToolUse":
+                    entry["matcher"] = INPUT_TOOLS
                 groups = data.setdefault("hooks", {}).setdefault(event, [])
                 # Exact pre-existing entries are not claimed by this installer.
                 if entry not in groups:

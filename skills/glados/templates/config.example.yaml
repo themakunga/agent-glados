@@ -15,6 +15,7 @@ tts:
     example:
       completion: false
       permission: false
+      input: false
 projects:
   - name: example
     path: ~/Projects/example
