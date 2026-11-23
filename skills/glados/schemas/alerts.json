@@ -2,8 +2,8 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "properties": {
-    "permission": {"$ref": "#/$defs/pool"},
-    "input": {"$ref": "#/$defs/pool"}
+    "permission": { "$ref": "#/$defs/pool" },
+    "input": { "$ref": "#/$defs/pool" }
   },
   "required": ["permission", "input"],
   "additionalProperties": false,
