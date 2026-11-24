@@ -1,5 +1,7 @@
 # GLaDOS
 
+![Markdown](https://img.shields.io/badge/Markdown-000000?style=flat-square&logo=markdown&logoColor=white)
+
 <!-- cspell:ignore pkgs -->
 
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](#requirements)
@@ -192,3 +194,14 @@ question text, tool arguments and confidential content are excluded from speech.
 See the [integration and migration guide](skills/glados/references/integration.md),
 [example configuration](skills/glados/templates/config.example.yaml) and
 [compatibility evidence](skills/glados/references/inventory.md).
+
+## Repository reference
+
+| Path                               | Purpose                                     |
+| ---------------------------------- | ------------------------------------------- |
+| [`skills/`](skills/)               | Agent skills and their supporting resources |
+| [`tests/`](tests/)                 | Tests and regression checks                 |
+| [`pyproject.toml`](pyproject.toml) | Python project metadata                     |
+
+The default branch is `feat/glados-skill`. Use the tracked manifests and scripts above when
+preparing changes; keep local credentials and generated files out of commits.
